@@ -1,9 +1,7 @@
 import psycopg2
-import sqlalchemy
 from app.models.categories_model import Categories
 from flask import current_app, jsonify, request
-from sqlalchemy import exc
-from sqlalchemy.sql.coercions import expect
+from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
 
 def create_category():
@@ -23,7 +21,7 @@ def create_category():
     except TypeError as e:
         return jsonify({"msg": str(e)}), 400
 
-    except sqlalchemy.exc.IntegrityError as e:
+    except IntegrityError as e:
         print(e.orig)
 
         # Campo faltando
@@ -32,4 +30,51 @@ def create_category():
 
         # Campo unico já existe
         if type(e.orig) == psycopg2.errors.UniqueViolation:
-            return {'msg': str(e.orig).split('\n')[1]}, 422
+            return {'msg': str(e.orig).split('\n')[1]}, 409
+
+
+def update_category(id: int):
+    try:
+        data = request.json
+
+        Categories.query.filter_by(id=id).update(data)
+
+        session = current_app.db.session
+        session.commit()
+
+        category = Categories.query.get(id)
+
+        if not category:
+            return {"msg": "category not found!"}, 404
+
+        return jsonify(category), 200
+
+    # Campo não existe
+    except TypeError as e:
+        return jsonify({"msg": str(e)}), 400
+
+    except IntegrityError as e:
+        print(e.orig)
+
+        # Campo faltando
+        if type(e.orig) == psycopg2.errors.NotNullViolation:
+            return {'msg': str(e.orig).split('\n')[0]}, 400
+
+        # Campo unico já existe
+        if type(e.orig) == psycopg2.errors.UniqueViolation:
+            return {'msg': str(e.orig).split('\n')[1]}, 409
+    
+    except InvalidRequestError as e:
+        return jsonify({"msg": str(e)}), 400
+
+
+def delete_category(id: int):
+    category = Categories.query.get(id)
+    if not category:
+        return jsonify({"msg": "Category not found!"}), 404
+
+    session = current_app.db.session
+    session.delete(category)
+    session.commit()
+
+    return jsonify(category), 204
