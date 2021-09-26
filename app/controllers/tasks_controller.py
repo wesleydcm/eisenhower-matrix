@@ -1,58 +1,44 @@
+from app.models.categories_model import Categories
 import psycopg2
-from app.exceptions.tasks_exp import InvalidTaskValueError
+from app.exceptions.TasksErrors import InvalidTaskClassificationError
 from app.models.eisenhowers_model import Eisenhowers
 from app.models.tasks_model import Tasks
 from flask import current_app, jsonify, request
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
 
-def verify_eisenhower_classification(importance: int, urgency: int):
-    if importance != 1 and importance != 2:
-        raise InvalidTaskValueError("importance needs integer equal 1 or 2")            
-    elif urgency != 1 and urgency != 2:
-        raise InvalidTaskValueError("urgency needs integer equal 1 or 2")
-
-
-    do_it_first: Eisenhowers = Eisenhowers.query.filter_by(type='Do It First').first()
-    delegate_it: Eisenhowers = Eisenhowers.query.filter_by(type='Delegate It').first()
-    schedule_it: Eisenhowers = Eisenhowers.query.filter_by(type='Schedule It').first()
-    delete_it: Eisenhowers = Eisenhowers.query.filter_by(type='Delete It').first()
-
-
-    if not do_it_first:
-        session = current_app.db.session
-        
-        session.add(Eisenhowers(type='Do It First'))
-        session.add(Eisenhowers(type='Delegate It'))
-        session.add(Eisenhowers(type='Schedule It'))
-        session.add(Eisenhowers(type='Delete It'))
-
-        session.commit()
-
-
-    if importance == 1 and urgency == 1:
-        return do_it_first.type
-    if importance == 1 and urgency == 2:
-        return delegate_it.type
-    if importance == 2 and urgency == 1:
-        return schedule_it.type
-
-    return delete_it.type
-
-
-
 def create_task():
     try:
         data = request.json
-
-        importance: int = int(data["importance"])
-        urgency: int = int(data["urgency"])
-
-        eisenhower_classification = verify_eisenhower_classification(importance, urgency)
-
         
+        eisenhower_id = Tasks.verify_eisenhower_classification(data)
 
-        return jsonify({"eisenhower_classification": eisenhower_classification}), 200
+        data['eisenhower_id'] = eisenhower_id
+
+        categories = data['categories']
+
+        del data['categories']
+
+        print(categories)
+        print(data)
+
+        new_task: Tasks = Tasks(**data)
+
+        for ctg in categories:
+            print(ctg['name'])
+            x: Categories = Categories.query.filter_by(name=ctg['name']).first()
+            if not x:
+                x: Categories = Categories(name=ctg['name'])
+            
+            new_task.category.append(x)
+
+
+        session = current_app.db.session
+        session.add(new_task)
+        session.commit()
+
+        return jsonify(new_task), 201
+
 
     except KeyError as e:
         return {"msg": f'Need to have property {str(e)}'}, 400
@@ -60,8 +46,20 @@ def create_task():
     except ValueError as e:
         return {"msg": str(e)}, 400
     
-    except InvalidTaskValueError as e:
-        return {"msg": str(e)}, 400
+    except InvalidTaskClassificationError as error:
+        return jsonify({'error': error.message}), 404
+    
+    except IntegrityError as e:
+        print(e.orig)
+
+        # Campo faltando
+        if type(e.orig) == psycopg2.errors.NotNullViolation:
+            return {'msg': str(e.orig).split('\n')[0]}, 400
+
+        # Campo unico já existe
+        if type(e.orig) == psycopg2.errors.UniqueViolation:
+            return {'msg': str(e.orig).split('\n')[1]}, 409    
+
 
 def update_task():
     ...

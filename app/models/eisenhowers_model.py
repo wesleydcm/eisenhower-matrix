@@ -7,7 +7,6 @@ from sqlalchemy import Column, Integer, String
 @dataclass
 class Eisenhowers(db.Model):
 
-    id: int
     type: str
 
     __tablename__ = 'eisenhowers'
