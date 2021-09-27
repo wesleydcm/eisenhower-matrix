@@ -1,11 +1,13 @@
-from app.models.categories_model import Categories
+from dataclasses import asdict
+
 import psycopg2
 from app.exceptions.TasksErrors import InvalidTaskClassificationError
-from app.models.eisenhowers_model import Eisenhowers
+from app.models.categories_model import Categories
 from app.models.tasks_model import Tasks
 from flask import current_app, jsonify, request
-from sqlalchemy.exc import IntegrityError, InvalidRequestError, ProgrammingError
-from dataclasses import asdict
+from sqlalchemy.exc import (IntegrityError, InvalidRequestError,
+                            ProgrammingError)
+
 
 def create_task():
     try:

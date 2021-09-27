@@ -1,12 +1,11 @@
-from app.models.tasks_categories_table import tasks_categories
 from dataclasses import dataclass
 
 from app.configs.database import db
 from app.exceptions.TasksErrors import InvalidTaskClassificationError
-from app.models.categories_model import Categories
 from app.models.eisenhowers_model import Eisenhowers
+from app.models.tasks_categories_table import tasks_categories
 from sqlalchemy import Column, Integer, String, Text
-from sqlalchemy.orm import backref, relationship, validates
+from sqlalchemy.orm import backref, relationship
 from sqlalchemy.schema import ForeignKey
 
 
@@ -18,7 +17,6 @@ class Tasks(db.Model):
     description: str
     duration: int
     eisenhower_classification: Eisenhowers
-    # category: Categories
 
 
     __tablename__ = 'tasks'

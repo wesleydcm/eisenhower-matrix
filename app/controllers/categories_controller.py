@@ -24,7 +24,6 @@ def create_category():
         return jsonify({"msg": str(e)}), 400
 
     except IntegrityError as e:
-        print(e.orig)
 
         # Campo faltando
         if type(e.orig) == psycopg2.errors.NotNullViolation:

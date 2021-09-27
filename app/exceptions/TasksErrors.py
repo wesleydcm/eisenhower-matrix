@@ -18,4 +18,3 @@ class InvalidTaskClassificationError(Exception):
         }
         
         super().__init__(self.message)
-
