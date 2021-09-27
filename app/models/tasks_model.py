@@ -18,7 +18,7 @@ class Tasks(db.Model):
     description: str
     duration: int
     eisenhower_classification: Eisenhowers
-    category: Categories
+    # category: Categories
 
 
     __tablename__ = 'tasks'

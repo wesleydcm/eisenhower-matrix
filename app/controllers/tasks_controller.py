@@ -5,6 +5,7 @@ from app.models.eisenhowers_model import Eisenhowers
 from app.models.tasks_model import Tasks
 from flask import current_app, jsonify, request
 from sqlalchemy.exc import IntegrityError, InvalidRequestError, ProgrammingError
+from dataclasses import asdict
 
 def create_task():
     try:
@@ -19,21 +20,29 @@ def create_task():
         del data['categories']
 
         new_task: Tasks = Tasks(**data)
+        
+        category_list = list()
+
 
         for ctg in categories:
-            print(ctg['name'])
             x: Categories = Categories.query.filter_by(name=ctg['name']).first()
             if not x:
                 x: Categories = Categories(name=ctg['name'])
             
             new_task.category.append(x)
+            category_list.append({"name": x.name})
 
 
         session = current_app.db.session
         session.add(new_task)
         session.commit()
 
-        return jsonify(new_task), 201
+
+        task = asdict(new_task)
+        task['category'] = category_list
+
+
+        return task, 201
 
 
     except KeyError as e:
