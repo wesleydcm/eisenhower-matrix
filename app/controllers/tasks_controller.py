@@ -4,8 +4,7 @@ from app.exceptions.TasksErrors import InvalidTaskClassificationError
 from app.models.eisenhowers_model import Eisenhowers
 from app.models.tasks_model import Tasks
 from flask import current_app, jsonify, request
-from sqlalchemy.exc import IntegrityError, InvalidRequestError
-
+from sqlalchemy.exc import IntegrityError, InvalidRequestError, ProgrammingError
 
 def create_task():
     try:
@@ -18,9 +17,6 @@ def create_task():
         categories = data['categories']
 
         del data['categories']
-
-        print(categories)
-        print(data)
 
         new_task: Tasks = Tasks(**data)
 
@@ -58,12 +54,74 @@ def create_task():
 
         # Campo unico já existe
         if type(e.orig) == psycopg2.errors.UniqueViolation:
-            return {'msg': str(e.orig).split('\n')[1]}, 409    
+            return {'msg': str(e.orig).split('\n')[1]}, 409
 
 
-def update_task():
-    ...
+def update_task(id: int):
+
+    task: Tasks = Tasks.query.get(id)
+    print(task.importance)
+
+    if not task:
+        return {"msg": "task not found!"}, 404
 
 
-def delete_task():
-    ...
+    try:
+        data = request.json
+
+        Tasks.query.filter_by(id=id).update(data)
+
+        task: Tasks = Tasks.query.get(id)
+
+        update_eisenhower_classification = {
+        'importance': task.importance,
+        'urgency': task.urgency
+        }
+
+        eisenhower_id = Tasks.verify_eisenhower_classification(update_eisenhower_classification)
+
+        data['eisenhower_id'] = eisenhower_id
+
+        Tasks.query.filter_by(id=id).update(data)
+
+        task: Tasks = Tasks.query.get(id)
+
+        session = current_app.db.session
+        session.commit()
+
+        return jsonify(task), 200
+
+    except ProgrammingError as e:
+        if type(e.orig) == psycopg2.errors.SyntaxError:
+            return jsonify({"msg": "Sintax error"}), 404
+
+    # Campo não existe
+    except TypeError as e:
+        return jsonify({"msg": str(e)}), 400
+
+    except IntegrityError as e:
+        print(e.orig)
+
+        # Campo faltando
+        if type(e.orig) == psycopg2.errors.NotNullViolation:
+            return {'msg': str(e.orig).split('\n')[0]}, 400
+
+        # Campo unico já existe
+        if type(e.orig) == psycopg2.errors.UniqueViolation:
+            return {'msg': str(e.orig).split('\n')[1]}, 409
+    
+    except InvalidRequestError as e:
+        return jsonify({"msg": str(e)}), 400
+
+
+def delete_task(id: int):
+    task = Tasks.query.get(id)
+
+    if not task:
+        return jsonify({"msg": "task not found!"}), 404
+
+    session = current_app.db.session
+    session.delete(task)
+    session.commit()
+
+    return jsonify(''), 204

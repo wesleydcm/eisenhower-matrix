@@ -77,4 +77,4 @@ def delete_category(id: int):
     session.delete(category)
     session.commit()
 
-    return jsonify(category), 204
+    return jsonify(''), 204
