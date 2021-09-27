@@ -1,5 +1,7 @@
 import psycopg2
 from app.models.categories_model import Categories
+from app.models.tasks_model import Tasks
+from app.models.tasks_categories_table import tasks_categories
 from flask import current_app, jsonify, request
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
@@ -78,3 +80,32 @@ def delete_category(id: int):
     session.commit()
 
     return jsonify(''), 204
+
+
+def list_categories():
+    session = current_app.db.session
+
+    query = session.query(Categories, Tasks).select_from(Categories).join(tasks_categories).join(Tasks).all()
+    # query = session.query(Categories, Tasks).select_from(Categories).join(tasks_categories).join(Tasks).all()
+
+    print(query)
+    
+    return jsonify({
+        "categories": [
+            {
+                "id": row.Categories.id,
+                "nome": row.Categories.name,
+                "description": row.Categories.description,
+                "tasks": [
+                    {
+                        "id": row.Tasks.id,
+                        "name": row.Tasks.name,
+                        "description": row.Tasks.description,
+                        "priority": row.Tasks.eisenhower_classification
+                    }
+                ]
+            }
+            for row in query
+        
+        ]
+    }), 200
