@@ -101,7 +101,7 @@ def list_categories():
                         "id": row.Tasks.id,
                         "name": row.Tasks.name,
                         "description": row.Tasks.description,
-                        "priority": row.Tasks.eisenhower_classification
+                        "priority": row.Tasks.eisenhower_classification.type
                     }
                 ]
             }
