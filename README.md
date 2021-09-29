@@ -11,4 +11,4 @@
 
 ## Diagrama de relacionamentos
 
-![diagrama-eisenhower](/uploads/8e05489f4036a5f3d497df83cc826dc7/diagrama-eisenhower.png)
+![diagrama-eisenhower](/diagrama-eisenhower.png)
