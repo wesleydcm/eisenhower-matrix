@@ -71,7 +71,6 @@ def create_task():
 def update_task(id: int):
 
     task: Tasks = Tasks.query.get(id)
-    print(task.importance)
 
     if not task:
         return {"msg": "task not found!"}, 404
@@ -85,8 +84,8 @@ def update_task(id: int):
         task: Tasks = Tasks.query.get(id)
 
         update_eisenhower_classification = {
-        'importance': task.importance,
-        'urgency': task.urgency
+            'importance': task.importance,
+            'urgency': task.urgency
         }
 
         eisenhower_id = Tasks.verify_eisenhower_classification(update_eisenhower_classification)
